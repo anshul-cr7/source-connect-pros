@@ -1,10 +1,26 @@
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Menu, X } from "lucide-react";
+import { ShoppingCart, Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, userProfile, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleDashboardClick = () => {
+    if (userProfile?.role === 'vendor') {
+      navigate('/vendor-dashboard');
+    } else if (userProfile?.role === 'supplier') {
+      navigate('/supplier-dashboard');
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -35,12 +51,28 @@ const Header = () => {
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <Link to="/login">
-            <Button variant="ghost">Login</Button>
-          </Link>
-          <Link to="/signup">
-            <Button variant="hero">Get Started</Button>
-          </Link>
+          {user ? (
+            <>
+              {userProfile && (
+                <Button onClick={handleDashboardClick} variant="ghost">
+                  {userProfile.role === 'vendor' ? 'Vendor Dashboard' : 'Supplier Dashboard'}
+                </Button>
+              )}
+              <Button onClick={handleSignOut} variant="ghost" className="flex items-center space-x-2">
+                <LogOut className="h-4 w-4" />
+                <span>Sign Out</span>
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost">Login</Button>
+              </Link>
+              <Link to="/signup">
+                <Button variant="hero">Get Started</Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -85,12 +117,42 @@ const Header = () => {
               About
             </Link>
             <div className="flex flex-col space-y-2 pt-4">
-              <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                <Button variant="ghost" className="w-full">Login</Button>
-              </Link>
-              <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
-                <Button variant="hero" className="w-full">Get Started</Button>
-              </Link>
+              {user ? (
+                <>
+                  {userProfile && (
+                    <Button 
+                      onClick={() => {
+                        handleDashboardClick();
+                        setIsMenuOpen(false);
+                      }} 
+                      variant="ghost" 
+                      className="w-full"
+                    >
+                      {userProfile.role === 'vendor' ? 'Vendor Dashboard' : 'Supplier Dashboard'}
+                    </Button>
+                  )}
+                  <Button 
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMenuOpen(false);
+                    }} 
+                    variant="ghost" 
+                    className="w-full flex items-center justify-center space-x-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full">Login</Button>
+                  </Link>
+                  <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="hero" className="w-full">Get Started</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
         </div>

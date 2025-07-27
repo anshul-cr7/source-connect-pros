@@ -3,30 +3,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ShoppingCart, User, Building } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
-  const [vendorEmail, setVendorEmail] = useState("");
-  const [vendorPassword, setVendorPassword] = useState("");
-  const [supplierEmail, setSupplierEmail] = useState("");
-  const [supplierPassword, setSupplierPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [activeTab, setActiveTab] = useState<'vendor' | 'supplier'>('vendor');
+  const [loading, setLoading] = useState(false);
+  
+  const { user, signIn, signUp, userProfile } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const isSignUp = location.pathname === '/signup';
 
-  const handleVendorLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulate login - will be replaced with Supabase auth
-    console.log("Vendor login:", { email: vendorEmail, password: vendorPassword });
-    // Redirect to vendor dashboard
-    window.location.href = "/vendor-dashboard";
-  };
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && userProfile) {
+      const from = (location.state as any)?.from?.pathname;
+      if (from) {
+        navigate(from, { replace: true });
+      } else {
+        const dashboardPath = userProfile.role === 'vendor' ? '/vendor-dashboard' : '/supplier-dashboard';
+        navigate(dashboardPath, { replace: true });
+      }
+    }
+  }, [user, userProfile, navigate, location]);
 
-  const handleSupplierLogin = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login - will be replaced with Supabase auth
-    console.log("Supplier login:", { email: supplierEmail, password: supplierPassword });
-    // Redirect to supplier dashboard
-    window.location.href = "/supplier-dashboard";
+    setLoading(true);
+
+    try {
+      if (isSignUp) {
+        const { error } = await signUp(email, password, activeTab, businessName);
+        if (!error) {
+          // User will be redirected automatically once profile is created
+        }
+      } else {
+        const { error } = await signIn(email, password);
+        if (!error) {
+          // User will be redirected automatically
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,11 +65,19 @@ const Login = () => {
               SourceMart
             </span>
           </Link>
-          <h1 className="text-2xl font-bold">Welcome Back</h1>
-          <p className="text-muted-foreground">Sign in to your account</p>
+          <h1 className="text-2xl font-bold">
+            {isSignUp ? 'Get Started' : 'Welcome Back'}
+          </h1>
+          <p className="text-muted-foreground">
+            {isSignUp ? 'Create your account' : 'Sign in to your account'}
+          </p>
         </div>
 
-        <Tabs defaultValue="vendor" className="space-y-6">
+        <Tabs 
+          value={activeTab} 
+          onValueChange={(value) => setActiveTab(value as 'vendor' | 'supplier')}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="vendor" className="flex items-center space-x-2">
               <User className="h-4 w-4" />
@@ -58,43 +92,66 @@ const Login = () => {
           <TabsContent value="vendor">
             <Card className="shadow-custom-lg">
               <CardHeader>
-                <CardTitle>Vendor Login</CardTitle>
+                <CardTitle>
+                  {isSignUp ? 'Vendor Sign Up' : 'Vendor Login'}
+                </CardTitle>
                 <CardDescription>
-                  Sign in to access your vendor dashboard
+                  {isSignUp 
+                    ? 'Create your vendor account to find suppliers' 
+                    : 'Sign in to access your vendor dashboard'
+                  }
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleVendorLogin} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="vendor-email">Email</Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input
-                      id="vendor-email"
+                      id="email"
                       type="email"
                       placeholder="vendor@example.com"
-                      value={vendorEmail}
-                      onChange={(e) => setVendorEmail(e.target.value)}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="vendor-password">Password</Label>
+                    <Label htmlFor="password">Password</Label>
                     <Input
-                      id="vendor-password"
+                      id="password"
                       type="password"
-                      value={vendorPassword}
-                      onChange={(e) => setVendorPassword(e.target.value)}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required
+                      minLength={6}
                     />
                   </div>
-                  <Button type="submit" className="w-full" variant="hero">
-                    Sign In as Vendor
+                  {isSignUp && (
+                    <div className="space-y-2">
+                      <Label htmlFor="business-name">Business Name (Optional)</Label>
+                      <Input
+                        id="business-name"
+                        type="text"
+                        placeholder="Your Business Name"
+                        value={businessName}
+                        onChange={(e) => setBusinessName(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    variant="hero"
+                    disabled={loading}
+                  >
+                    {loading 
+                      ? 'Processing...' 
+                      : isSignUp 
+                        ? 'Create Vendor Account' 
+                        : 'Sign In as Vendor'
+                    }
                   </Button>
                 </form>
-                <div className="mt-4 text-center text-sm">
-                  <Link to="/forgot-password" className="text-primary hover:underline">
-                    Forgot your password?
-                  </Link>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -102,52 +159,80 @@ const Login = () => {
           <TabsContent value="supplier">
             <Card className="shadow-custom-lg">
               <CardHeader>
-                <CardTitle>Supplier Login</CardTitle>
+                <CardTitle>
+                  {isSignUp ? 'Supplier Sign Up' : 'Supplier Login'}
+                </CardTitle>
                 <CardDescription>
-                  Sign in to access your supplier dashboard
+                  {isSignUp 
+                    ? 'Create your supplier account to list products' 
+                    : 'Sign in to access your supplier dashboard'
+                  }
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSupplierLogin} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="supplier-email">Email</Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input
-                      id="supplier-email"
+                      id="email"
                       type="email"
                       placeholder="supplier@example.com"
-                      value={supplierEmail}
-                      onChange={(e) => setSupplierEmail(e.target.value)}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="supplier-password">Password</Label>
+                    <Label htmlFor="password">Password</Label>
                     <Input
-                      id="supplier-password"
+                      id="password"
                       type="password"
-                      value={supplierPassword}
-                      onChange={(e) => setSupplierPassword(e.target.value)}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required
+                      minLength={6}
                     />
                   </div>
-                  <Button type="submit" className="w-full" variant="hero">
-                    Sign In as Supplier
+                  {isSignUp && (
+                    <div className="space-y-2">
+                      <Label htmlFor="business-name">Business Name (Optional)</Label>
+                      <Input
+                        id="business-name"
+                        type="text"
+                        placeholder="Your Business Name"
+                        value={businessName}
+                        onChange={(e) => setBusinessName(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    variant="hero"
+                    disabled={loading}
+                  >
+                    {loading 
+                      ? 'Processing...' 
+                      : isSignUp 
+                        ? 'Create Supplier Account' 
+                        : 'Sign In as Supplier'
+                    }
                   </Button>
                 </form>
-                <div className="mt-4 text-center text-sm">
-                  <Link to="/forgot-password" className="text-primary hover:underline">
-                    Forgot your password?
-                  </Link>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
 
         <div className="mt-6 text-center text-sm">
-          <span className="text-muted-foreground">Don't have an account? </span>
-          <Link to="/signup" className="text-primary hover:underline font-medium">
-            Sign up here
+          <span className="text-muted-foreground">
+            {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+          </span>
+          <Link 
+            to={isSignUp ? "/login" : "/signup"} 
+            className="text-primary hover:underline font-medium"
+          >
+            {isSignUp ? 'Sign in here' : 'Sign up here'}
           </Link>
         </div>
       </div>

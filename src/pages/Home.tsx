@@ -1,11 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle, Users, ShieldCheck, TrendingUp, Star, Quote } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
+import { useAuth } from "@/hooks/useAuth";
 
 const Home = () => {
+  const { user, userProfile } = useAuth();
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    if (user && userProfile) {
+      // Redirect to appropriate dashboard
+      const dashboardPath = userProfile.role === 'vendor' ? '/vendor-dashboard' : '/supplier-dashboard';
+      navigate(dashboardPath);
+    } else {
+      // Redirect to signup
+      navigate('/signup');
+    }
+  };
+
   const features = [
     {
       icon: <Users className="h-8 w-8 text-primary" />,
@@ -77,11 +92,9 @@ const Home = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/signup">
-                  <Button size="lg" variant="hero" className="w-full sm:w-auto">
-                    Start Sourcing Now
-                  </Button>
-                </Link>
+                <Button size="lg" variant="hero" className="w-full sm:w-auto" onClick={handleGetStarted}>
+                  {user ? 'Go to Dashboard' : 'Start Sourcing Now'}
+                </Button>
                 <Link to="/suppliers">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto">
                     Browse Suppliers
@@ -208,11 +221,9 @@ const Home = () => {
               Join thousands of vendors and suppliers who are already growing their business with SourceMart
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/signup">
-                <Button size="lg" variant="secondary" className="w-full sm:w-auto">
-                  Get Started Free
-                </Button>
-              </Link>
+              <Button size="lg" variant="secondary" className="w-full sm:w-auto" onClick={handleGetStarted}>
+                {user ? 'Go to Dashboard' : 'Get Started Free'}
+              </Button>
               <Link to="/contact">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary">
                   Contact Sales
