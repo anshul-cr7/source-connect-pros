@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import Suppliers from "./pages/Suppliers";
 import VendorDashboard from "./pages/VendorDashboard";
 import SupplierDashboard from "./pages/SupplierDashboard";
 import Header from "./components/Layout/Header";
@@ -30,6 +31,7 @@ const App = () => (
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Login />} />
+                <Route path="/suppliers" element={<Suppliers />} />
                 <Route 
                   path="/vendor-dashboard" 
                   element={
